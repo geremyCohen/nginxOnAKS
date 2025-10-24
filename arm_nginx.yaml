@@ -39,5 +39,6 @@ spec:
     protocol: TCP
     targetPort: 80
   selector:
+    app: nginx-multiarch
     arch: arm
   type: LoadBalancer
