@@ -1,0 +1,35 @@
+apiVersion: v1
+data:
+  nginx.conf: |
+    worker_processes auto;
+    worker_cpu_affinity auto;
+    worker_rlimit_nofile 1000000;
+    events {
+        worker_connections 6144;
+        use epoll;
+        multi_accept on;
+    }
+    http {
+        access_log off;
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        server {
+            listen 80;
+            location / {
+                return 200 '{"message":"nginx response","timestamp":"$time_iso8601","server":"$hostname","request_uri":"$request_uri"}';
+                add_header Content-Type application/json;
+            }
+        }
+    }
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"nginx.conf":"worker_processes auto;\nworker_cpu_affinity auto;\nworker_rlimit_nofile 1000000;\nevents {\n    worker_connections 6144;\n    use epoll;\n    multi_accept on;\n}\nhttp {\n    access_log off;\n    sendfile on;\n    tcp_nopush on;\n    tcp_nodelay on;\n    keepalive_timeout 65;\n    server {\n        listen 80;\n        location / {\n            return 200 '{\"message\":\"nginx response\",\"timestamp\":\"$time_iso8601\",\"server\":\"$hostname\",\"request_uri\":\"$request_uri\"}';\n            add_header Content-Type application/json;\n        }\n    }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"nginx-intel","namespace":"nginx"}}
+  creationTimestamp: "2025-10-23T20:02:56Z"
+  name: nginx-intel
+  namespace: nginx
+  resourceVersion: "446160"
+  uid: f10b6b56-97ca-4fd6-9ed2-519ba5afe8b9
