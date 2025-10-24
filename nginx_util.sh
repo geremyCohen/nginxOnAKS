@@ -81,6 +81,7 @@ install_btop() {
 run_action() {
     action=$1
     arch=$2
+    duration=${3:-5}
 
     svc_ip=$(get_service_ip $arch)
     echo "Using service endpoint $svc_ip for $action on $(tput bold)$arch service$(tput sgr0)"
@@ -106,7 +107,7 @@ run_action() {
             ;;
         wrk)
             check_wrk_dependency
-            wrk_cmd="wrk -t4 -c1000 -d5 http://$svc_ip/"
+            wrk_cmd="wrk -t4 -c1000 -d${duration} http://$svc_ip/"
             echo "Now running wrk commandline: $wrk_cmd"
             echo ""
             $wrk_cmd
@@ -133,7 +134,7 @@ case $1 in
     wrk)
         case $2 in
             intel|arm|multiarch)
-                run_action $1 $2
+                run_action $1 $2 $3
                 ;;
             *)
                 echo "Invalid second argument. Use 'intel', 'arm', or 'multiarch'."
