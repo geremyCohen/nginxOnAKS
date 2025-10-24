@@ -123,12 +123,8 @@ run_action() {
             response=$(get_request $svc_ip)
             echo "Response: $response"
             
-            # Wait a moment for logs to appear
-            sleep 1
-            
-            # Find which pod corresponds to this service endpoint
-            service_endpoint=$(kubectl get endpoints -nnginx nginx-${arch}-svc -o jsonpath='{.subsets[0].addresses[0].ip}')
-            serving_pod=$(kubectl get pods -nnginx -o wide --no-headers | awk -v ip="$service_endpoint" '$6==ip {print $1}')
+            # Extract server name from JSON response
+            serving_pod=$(echo "$response" | grep -o '"server":"[^"]*"' | cut -d'"' -f4)
             
             if [ -n "$serving_pod" ]; then
                 # Extract architecture from pod name and bold it
