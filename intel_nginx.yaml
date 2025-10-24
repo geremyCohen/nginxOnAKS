@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-intel-deployment
+  labels:
+    app: nginx-multiarch
+  namespace: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      arch: intel
+  template:
+    metadata:
+      labels:
+        app: nginx-multiarch
+        arch: intel
+    spec:
+      nodeSelector:
+        agentpool: intel
+      containers:
+      - image: nginx:latest
+        name: nginx-multiarch
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-intel-svc
+  namespace: nginx
+spec:
+  sessionAffinity: None
+  ports:
+  - nodePort: 30080
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    arch: intel
+  type: LoadBalancer
