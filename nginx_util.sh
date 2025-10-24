@@ -160,7 +160,8 @@ run_action() {
         get)
             # Make the request
             response=$(get_request $svc_ip)
-            echo "Response: $response"
+            echo "Response:"
+            echo "$response" | jq .
             
             # Extract server name from JSON response
             serving_pod=$(echo "$response" | grep -o '"server":"[^"]*"' | cut -d'"' -f4)
