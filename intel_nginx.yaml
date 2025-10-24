@@ -20,7 +20,7 @@ spec:
         agentpool: intel
       containers:
       - image: nginx:latest
-        name: nginx-multiarch
+        name: nginx
         ports:
         - containerPort: 80
           name: http
