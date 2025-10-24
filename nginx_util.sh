@@ -39,6 +39,20 @@ check_dependencies() {
 # Check dependencies before proceeding
 check_dependencies
 
+check_wrk_dependency() {
+    if ! command -v wrk &> /dev/null; then
+        echo "Error: wrk is not installed"
+        echo ""
+        echo "Install wrk:"
+        echo "  Ubuntu/Debian: sudo apt-get install wrk"
+        echo "  RHEL/CentOS: sudo yum install wrk"
+        echo "  macOS: brew install wrk"
+        echo ""
+        echo "Or build from source: https://github.com/wg/wrk"
+        exit 1
+    fi
+}
+
 get_service_ip() {
     arch=$1
     svc_name="nginx-${arch}-svc"
@@ -90,8 +104,15 @@ run_action() {
                 echo "Served by: Unable to determine"
             fi
             ;;
+        wrk)
+            check_wrk_dependency
+            wrk_cmd="wrk -t4 -c1000 -d5 http://$svc_ip/"
+            echo "Now running wrk commandline: $wrk_cmd"
+            echo ""
+            $wrk_cmd
+            ;;
         *)
-            echo "Invalid action. Use 'curl'."
+            echo "Invalid action. Use 'curl' or 'wrk'."
             exit 1
             ;;
     esac
@@ -99,6 +120,17 @@ run_action() {
 
 case $1 in
     curl)
+        case $2 in
+            intel|arm|multiarch)
+                run_action $1 $2
+                ;;
+            *)
+                echo "Invalid second argument. Use 'intel', 'arm', or 'multiarch'."
+                exit 1
+                ;;
+        esac
+        ;;
+    wrk)
         case $2 in
             intel|arm|multiarch)
                 run_action $1 $2
@@ -140,7 +172,7 @@ case $1 in
         esac
         ;;
     *)
-        echo "Invalid first argument. Use 'curl', 'put', or 'login'."
+        echo "Invalid first argument. Use 'curl', 'wrk', 'put', or 'login'."
         exit 1
         ;;
 esac
