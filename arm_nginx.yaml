@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-arm-deployment
+  namespace: nginx
+  labels:
+    app: nginx-multiarch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      arch: arm
+  template:
+    metadata:
+      labels:
+        app: nginx-multiarch
+        arch: arm
+    spec:
+      nodeSelector:
+        agentpool: arm
+      containers:
+      - image: nginx:latest
+        name: nginx-multiarch
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-arm-svc
+  namespace: nginx
+spec:
+  sessionAffinity: None
+  ports:
+  - nodePort: 30082
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    arch: arm
+  type: LoadBalancer
