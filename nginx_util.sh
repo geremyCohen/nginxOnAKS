@@ -50,94 +50,9 @@ get_request() {
     curl -s http://$svc_ip/ | head -1
 }
 
-apply_nginx_config() {
+install_btop() {
     NAMESPACE="nginx"
     
-    echo "Applying custom nginx.conf to all nginx pods..."
-    
-    # Create the custom nginx.conf content
-    kubectl create configmap nginx-config --from-literal=nginx.conf='
-user  nginx;
-
-error_log  /var/log/nginx/error.log notice;
-pid        /run/nginx.pid;
-
-worker_processes auto;
-events {
-    worker_connections  1024;
-}
-
-http {
-
-    server {
-        listen 80;
-
-        location / {
-            root /usr/share/nginx/html;
-        }
-    }
-        # cache informations about FDs, frequently accessed files
-    # can boost performance, but you need to test those values
-    open_file_cache max=200000 inactive=20s;
-    open_file_cache_valid 30s;
-    open_file_cache_min_uses 2;
-    open_file_cache_errors on;
-
-    # access logs enabled for monitoring and debugging
-    access_log /var/log/nginx/access.log;
-
-    # copies data between one FD and other from within the kernel
-    # faster than read() + write()
-    sendfile on;
-
-    # send headers in one piece, it is better than sending them one by one
-    tcp_nopush on;
-
-    # don'\''t buffer data sent, good for small data bursts in real time
-    tcp_nodelay on;
-    
-
-    # allow the server to close connection on non responding client, this will free up memory
-    reset_timedout_connection on;
-
-    # request timed out -- default 60
-    client_body_timeout 10;
-
-    # if client stop responding, free up memory -- default 60
-    send_timeout 2;
-
-    # server will close connection after this time -- default 75
-    keepalive_timeout 30;
-
-    # number of requests client can make over keep-alive -- for testing environment
-    keepalive_requests 100000;
-}
-' -n $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-
-    # Get all nginx deployments and update them
-    for deployment in $(kubectl get deployments -n $NAMESPACE -o name | grep nginx); do
-        deployment_name=$(echo $deployment | cut -d'/' -f2)
-        echo "Updating $deployment_name..."
-        
-        # Add volume and volume mount to deployment
-        kubectl patch deployment $deployment_name -n $NAMESPACE --type='json' -p='[
-            {
-                "op": "add",
-                "path": "/spec/template/spec/volumes",
-                "value": [{"name": "nginx-config", "configMap": {"name": "nginx-config"}}]
-            },
-            {
-                "op": "add", 
-                "path": "/spec/template/spec/containers/0/volumeMounts",
-                "value": [{"name": "nginx-config", "mountPath": "/etc/nginx/nginx.conf", "subPath": "nginx.conf"}]
-            }
-        ]'
-    done
-
-    echo "Waiting for pods to restart with new configuration..."
-    sleep 15
-
-    # Install btop on all nginx pods
     echo "Installing btop on all nginx pods..."
     for pod in $(kubectl get pods -l app=nginx-multiarch -n $NAMESPACE -o name | sed 's/pod\///'); do
         echo "Installing btop on $pod..."
@@ -146,7 +61,7 @@ http {
         echo "✓ btop installed on $pod"
     done
 
-    echo "✅ Custom nginx.conf applied and btop installed on all pods!"
+    echo "✅ btop installed on all pods!"
 }
 
 run_action() {
@@ -185,29 +100,29 @@ run_action() {
 case $1 in
     get)
         case $2 in
-            intel|arm|amd|multiarch)
+            intel|arm|multiarch)
                 run_action $1 $2
                 ;;
             *)
-                echo "Invalid second argument. Use 'intel', 'arm', 'amd', or 'multiarch'."
+                echo "Invalid second argument. Use 'intel', 'arm', or 'multiarch'."
                 exit 1
                 ;;
         esac
         ;;
     put)
         case $2 in
-            config)
-                apply_nginx_config
+            btop)
+                install_btop
                 ;;
             *)
-                echo "Invalid second argument. Use 'config'."
+                echo "Invalid second argument. Use 'btop'."
                 exit 1
                 ;;
         esac
         ;;
     login)
         case $2 in
-            intel|arm|amd)
+            intel|arm)
                 # Get the pod for the specified architecture
                 pod_name=$(kubectl get pods -l arch=$2 -nnginx -o name | sed 's/pod\///')
                 if [ -n "$pod_name" ]; then
@@ -219,7 +134,7 @@ case $1 in
                 fi
                 ;;
             *)
-                echo "Invalid second argument. Use 'intel', 'arm', or 'amd'."
+                echo "Invalid second argument. Use 'intel' or 'arm'."
                 exit 1
                 ;;
         esac
