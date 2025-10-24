@@ -1,5 +1,44 @@
 #!/bin/bash
 
+# Check for required dependencies
+check_dependencies() {
+    missing_deps=()
+    
+    if ! command -v curl &> /dev/null; then
+        missing_deps+=("curl")
+    fi
+    
+    if ! command -v jq &> /dev/null; then
+        missing_deps+=("jq")
+    fi
+    
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        echo "Error: Missing required dependencies: ${missing_deps[*]}"
+        echo ""
+        for dep in "${missing_deps[@]}"; do
+            case $dep in
+                curl)
+                    echo "Install curl:"
+                    echo "  Ubuntu/Debian: sudo apt-get install curl"
+                    echo "  RHEL/CentOS: sudo yum install curl"
+                    echo "  macOS: brew install curl"
+                    ;;
+                jq)
+                    echo "Install jq:"
+                    echo "  Ubuntu/Debian: sudo apt-get install jq"
+                    echo "  RHEL/CentOS: sudo yum install jq"
+                    echo "  macOS: brew install jq"
+                    ;;
+            esac
+            echo ""
+        done
+        exit 1
+    fi
+}
+
+# Check dependencies before proceeding
+check_dependencies
+
 get_service_ip() {
     arch=$1
     svc_name="nginx-${arch}-svc"
