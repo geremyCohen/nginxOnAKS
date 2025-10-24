@@ -72,7 +72,7 @@ run_action() {
     echo "Using service endpoint $svc_ip for $action on $(tput bold)$arch service$(tput sgr0)"
 
     case $action in
-        get)
+        curl)
             # Make the request
             response=$(get_request $svc_ip)
             echo "Response:"
@@ -91,14 +91,14 @@ run_action() {
             fi
             ;;
         *)
-            echo "Invalid first argument. Use 'get'."
+            echo "Invalid action. Use 'curl'."
             exit 1
             ;;
     esac
 }
 
 case $1 in
-    get)
+    curl)
         case $2 in
             intel|arm|multiarch)
                 run_action $1 $2
@@ -140,7 +140,7 @@ case $1 in
         esac
         ;;
     *)
-        echo "Invalid first argument. Use 'get', 'put', or 'login'."
+        echo "Invalid first argument. Use 'curl', 'put', or 'login'."
         exit 1
         ;;
 esac
