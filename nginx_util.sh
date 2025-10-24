@@ -107,7 +107,7 @@ run_action() {
             ;;
         wrk)
             check_wrk_dependency
-            wrk_cmd="wrk -t4 -c1000 -d${duration} http://$svc_ip/"
+            wrk_cmd="wrk -t2 -c30 -d${duration} http://$svc_ip/"
             echo "Now running wrk commandline: $wrk_cmd"
             echo ""
             $wrk_cmd
