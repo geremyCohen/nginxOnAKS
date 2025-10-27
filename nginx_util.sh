@@ -81,7 +81,7 @@ install_btop() {
 run_action() {
     action=$1
     arch=$2
-    duration=${3:-5}
+    duration=${3:-30}
 
     svc_ip=$(get_service_ip $arch)
     echo "Using service endpoint $svc_ip for $action on $(tput bold)$arch service$(tput sgr0)"
@@ -107,7 +107,7 @@ run_action() {
             ;;
         wrk)
             check_wrk_dependency
-            wrk_cmd="wrk -t2 -c30 -d${duration} http://$svc_ip/"
+            wrk_cmd="wrk -t1 -c30 -d${duration} http://$svc_ip/"
             echo "Now running wrk commandline: $wrk_cmd"
             echo ""
             $wrk_cmd
