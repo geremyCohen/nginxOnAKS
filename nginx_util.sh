@@ -82,12 +82,13 @@ run_action() {
     action=$1
     arch=$2
     duration=${3:-30}
-
-    svc_ip=$(get_service_ip $arch)
-    echo "Using service endpoint $svc_ip for $action on $(tput bold)$arch service$(tput sgr0)"
+    connections=${4:-30}
 
     case $action in
         curl)
+            svc_ip=$(get_service_ip $arch)
+            echo "Using service endpoint $svc_ip for $action on $(tput bold)$arch service$(tput sgr0)"
+            
             # Make the request
             response=$(get_request $svc_ip)
             echo "Response:"
@@ -107,10 +108,61 @@ run_action() {
             ;;
         wrk)
             check_wrk_dependency
-            wrk_cmd="wrk -t1 -c30 -d${duration} http://$svc_ip/"
-            echo "Now running wrk commandline: $wrk_cmd"
-            echo ""
-            $wrk_cmd
+            
+            if [ "$arch" = "both" ]; then
+                # Run wrk against both intel and arm in parallel
+                intel_ip=$(get_service_ip intel)
+                arm_ip=$(get_service_ip arm)
+                
+                intel_cmd="wrk -t1 -c${connections} -d${duration} http://$intel_ip/"
+                arm_cmd="wrk -t1 -c${connections} -d${duration} http://$arm_ip/"
+                
+                echo "Running wrk against both architectures in parallel..."
+                echo ""
+                echo "$(tput bold)Intel:$(tput sgr0) $intel_cmd"
+                echo "$(tput bold)ARM:$(tput sgr0) $arm_cmd"
+                echo ""
+                echo "========================================"
+                
+                # Create temp files for output
+                intel_out=$(mktemp)
+                arm_out=$(mktemp)
+                
+                # Run both in parallel and capture output to files
+                $intel_cmd > "$intel_out" 2>&1 &
+                intel_pid=$!
+                
+                $arm_cmd > "$arm_out" 2>&1 &
+                arm_pid=$!
+                
+                # Wait for both to complete
+                wait $intel_pid
+                wait $arm_pid
+                
+                # Display results sequentially
+                echo ""
+                echo "$(tput bold)INTEL RESULTS:$(tput sgr0)"
+                cat "$intel_out"
+                
+                echo ""
+                echo "$(tput bold)ARM RESULTS:$(tput sgr0)"
+                cat "$arm_out"
+                
+                # Cleanup temp files
+                rm -f "$intel_out" "$arm_out"
+                
+                echo ""
+                echo "========================================"
+                echo "Both tests completed"
+            else
+                svc_ip=$(get_service_ip $arch)
+                echo "Using service endpoint $svc_ip for $action on $(tput bold)$arch service$(tput sgr0)"
+                
+                wrk_cmd="wrk -t1 -c${connections} -d${duration} http://$svc_ip/"
+                echo "Now running wrk commandline: $wrk_cmd"
+                echo ""
+                $wrk_cmd
+            fi
             ;;
         *)
             echo "Invalid action. Use 'curl' or 'wrk'."
@@ -133,11 +185,11 @@ case $1 in
         ;;
     wrk)
         case $2 in
-            intel|arm|multiarch)
-                run_action $1 $2 $3
+            intel|arm|multiarch|both)
+                run_action $1 $2 $3 $4
                 ;;
             *)
-                echo "Invalid second argument. Use 'intel', 'arm', or 'multiarch'."
+                echo "Invalid second argument. Use 'intel', 'arm', 'multiarch', or 'both'."
                 exit 1
                 ;;
         esac
