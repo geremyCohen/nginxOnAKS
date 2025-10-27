@@ -82,7 +82,7 @@ run_action() {
     action=$1
     arch=$2
     duration=${3:-30}
-    connections=${4:-45}
+    connections=${4:-50}
 
     case $action in
         curl)
